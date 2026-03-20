@@ -272,6 +272,8 @@ Connect nanobot to your favorite chat platform. Want to build your own? See the 
 > You can find your **User ID** in Telegram settings. It is shown as `@yourUserId`.
 > Copy this value **without the `@` symbol** and paste it into the config file.
 
+> **Streaming** (`"streaming": true` by default) shows responses as they are generated via Telegram's draft message feature. If you experience duplicate messages — either temporarily during a response or persistently — set `"streaming": false` to disable it and send only the final response.
+
 
 **3. Run**
 

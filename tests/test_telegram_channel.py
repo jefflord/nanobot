@@ -836,3 +836,42 @@ async def test_on_help_includes_restart_command() -> None:
     update.message.reply_text.assert_awaited_once()
     help_text = update.message.reply_text.await_args.args[0]
     assert "/restart" in help_text
+
+
+@pytest.mark.asyncio
+async def test_streaming_false_sends_directly_without_draft() -> None:
+    """With streaming=False, send() calls send_message once and never calls send_message_draft."""
+    config = TelegramConfig(enabled=True, token="123:abc", allow_from=["*"], streaming=False)
+    channel = TelegramChannel(config, MessageBus())
+    channel._app = _FakeApp(lambda: None)
+
+    # Attach a tracker to catch any unexpected send_message_draft calls.
+    draft_calls: list = []
+    channel._app.bot.send_message_draft = AsyncMock(side_effect=lambda **kw: draft_calls.append(kw))
+
+    await channel.send(
+        OutboundMessage(channel="telegram", chat_id="123", content="hello streaming=False")
+    )
+
+    assert len(channel._app.bot.sent_messages) == 1
+    assert channel._app.bot.sent_messages[0]["chat_id"] == 123
+    assert draft_calls == [], "send_message_draft must not be called when streaming=False"
+
+
+@pytest.mark.asyncio
+async def test_streaming_true_uses_draft_then_sends_final() -> None:
+    """With streaming=True (default), send() calls send_message_draft at least once before
+    the final send_message, and only one final message is persisted."""
+    config = TelegramConfig(enabled=True, token="123:abc", allow_from=["*"], streaming=True)
+    channel = TelegramChannel(config, MessageBus())
+    channel._app = _FakeApp(lambda: None)
+
+    draft_calls: list = []
+    channel._app.bot.send_message_draft = AsyncMock(side_effect=lambda **kw: draft_calls.append(kw))
+
+    await channel.send(
+        OutboundMessage(channel="telegram", chat_id="123", content="hello streaming=True")
+    )
+
+    assert len(draft_calls) >= 1, "send_message_draft should be called at least once when streaming=True"
+    assert len(channel._app.bot.sent_messages) == 1, "exactly one final message should be sent"

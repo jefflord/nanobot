@@ -165,7 +165,7 @@ class TelegramConfig(Base):
     proxy: str | None = None
     reply_to_message: bool = False
     group_policy: Literal["open", "mention"] = "mention"
-    streaming: bool = False
+    streaming: bool = True
     connection_pool_size: int = 32
     pool_timeout: float = 5.0
 
